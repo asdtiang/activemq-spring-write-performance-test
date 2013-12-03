@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+		http://www.springframework.org/schema/beans/spring-beans-3.2.xsd
+		http://www.springframework.org/schema/context
+		http://www.springframework.org/schema/context/spring-context-3.2.xsd">
+
+	<!-- 配置JMS连接工厂 -->
+	<bean id="activeMqConnectionFactory" class="org.apache.activemq.spring.ActiveMQConnectionFactory">
+		<property name="brokerURL" value="tcp://localhost:61616" />
+		<property name="useAsyncSend" value="true" />
+	</bean>
+	<!-- 连接工厂的定义 -->
+	<bean id="connectionFactory"
+		class="org.springframework.jms.connection.CachingConnectionFactory">
+		<constructor-arg ref="activeMqConnectionFactory" />
+		<property name="sessionCacheSize" value="100" /><!-- 缓存的消息数 -->
+	</bean>
+
+	<!-- 配置JMS模版 -->
+	<bean id="jmsTemplate" class="org.springframework.jms.core.JmsTemplate">
+		<property name="connectionFactory" ref="connectionFactory" />
+		<property name="explicitQosEnabled" value="true" />
+		<property name="deliveryMode" value="1" />
+	</bean>
+
+	<!-- 发送消息的目的地（一个队列） -->
+	<bean id="requestDestination" class="org.apache.activemq.command.ActiveMQQueue">
+		<!-- 设置消息队列的名字 -->
+		<constructor-arg index="0" value="requestQueue" />
+	</bean>
+
+	<!-- 消息生产者 -->
+	<bean id="producer" class="com.zhaiyz.activemq.Producer"
+		init-method="init">
+		<property name="jmsTemplate" ref="jmsTemplate" />
+		<property name="requestDestination" ref="requestDestination" />
+		<property name="sendThreads" value="100" />
+	</bean>
+</beans>
